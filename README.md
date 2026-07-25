@@ -1,6 +1,6 @@
 # Voting App on EKS
 
-This is my Project 2 for the Ironhack DevOps bootcamp. I took the polyglot voting app from the previous project (Python vote UI, Node.js result UI, .NET worker, Redis, Postgres) and moved it from plain Docker/EC2 onto a real Kubernetes cluster on AWS, with GitHub Actions building and deploying it automatically.
+This is my Project 2 for the Ironhack DevOps bootcamp. In the capstone, I deployed this same polyglot voting app, Python vote UI, Node.js result UI, .NET worker, Redis, and Postgres, across a three-tier EC2 architecture using Terraform for provisioning and Ansible for configuration. This project takes the same app and moves it onto a managed Kubernetes cluster on EKS instead, with GitHub Actions handling the build and deploy pipeline automatically.
 
 ## Why EKS
 
