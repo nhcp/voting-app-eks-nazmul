@@ -41,6 +41,19 @@ This confirms two things at once: kubectl is correctly pointed at the new cluste
 
 ![Both nodes ready](docs/screenshots/03-nodes-ready.png)
 
+## Deploying Redis and Postgres
+
+Redis and Postgres each got a Deployment to keep a container running, and a Service to give it a stable internal name. Redis came up immediately. Postgres also needed a Secret for its database credentials and a PersistentVolumeClaim for durable storage.
+
+The PVC got stuck in Pending, tracing it through kubectl describe showed the pod could not schedule because the claim was unbound. The EBS CSI driver, which actually provisions AWS storage for Kubernetes, was not installed by default when the cluster was created. After installing it as an eksctl addon, the PVC was still not binding, since the only existing StorageClass on this shared classroom cluster used the older in-tree AWS provisioner rather than the CSI driver, and nothing pointed at it as default.
+
+Fixed it by creating a StorageClass explicitly using the CSI provisioner and referencing it by name in the PVC directly, rather than relying on a default. Once applied, the PVC bound immediately and Postgres started.
+
+    kubectl apply -f k8s/redis/
+    kubectl apply -f k8s/postgres/
+
+![Redis and Postgres running](docs/screenshots/04-redis-postgres-running.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
