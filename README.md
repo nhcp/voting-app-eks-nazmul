@@ -99,6 +99,16 @@ Checking pod ages afterward confirmed the whole pipeline reached the cluster, no
 
 ![Pods recreated by the pipeline](docs/screenshots/09-pipeline-verified-in-cluster.png)
 
+## Fixing sub-path routing in the vote app
+
+Once the Ingress rewrite was in place, the vote page loaded but was unstyled, and clicking a vote button led to an error. The vote app was originally written assuming it lives at the root of its own server, exactly how it ran in the capstone, so its HTML used a base tag and absolute paths that always pointed back to the domain root regardless of the actual URL. Behind an Ingress at a /vote sub-path, that assumption breaks.
+
+Fixed the template first, removing the base tag and switching the form action and stylesheet link to relative paths. That surfaced a second issue: Flask only had a route for /vote, not /vote/, and a trailing slash is what makes relative paths resolve correctly under a sub-path, so a plain GET to /vote/ was 404ing. Added a matching route. That in turn surfaced a third issue, Flask serves static files at /static/ by default, not /vote/static/, so the browser was asking for a path Flask did not recognize. Added an explicit route to serve static assets under /vote/static/ as well.
+
+Three separate layers, the Ingress rewrite, Flask routing, and static file serving, all had to agree on the same path structure before voting and styling both worked.
+
+![Voting app working end to end through the Ingress](docs/screenshots/10-final-demo.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
