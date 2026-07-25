@@ -4,8 +4,8 @@ This is my Project 2 for the Ironhack DevOps bootcamp. In the capstone, I deploy
 
 ## Live demo
 
-    Vote: http://afce8ba2cb6874b21baaff9bde6cfa27-1117667419.us-east-1.elb.amazonaws.com/vote/
-    Result: http://afce8ba2cb6874b21baaff9bde6cfa27-1117667419.us-east-1.elb.amazonaws.com/result/
+    Vote: https://voting.flinktrade.com/vote/
+    Result: https://voting.flinktrade.com/result/
 
 This points at a live EKS cluster, so it only works while the cluster is running. If the links are down, it likely means the cluster was torn down after grading or demo to avoid ongoing AWS costs.
 
@@ -115,6 +115,19 @@ Fixed the template first, removing the base tag and switching the form action an
 Three separate layers, the Ingress rewrite, Flask routing, and static file serving, all had to agree on the same path structure before voting and styling both worked.
 
 ![Voting app working end to end through the Ingress](docs/screenshots/10-final-demo.png)
+
+## HTTPS with cert-manager and Cloudflare
+
+The last addon was serving the app over a real domain with a trusted certificate instead of a bare HTTP load balancer hostname. Installed cert-manager via Helm, created a ClusterIssuer configured for Lets Encrypt using DNS-01 validation through Cloudflare, since flinktrade.com DNS is managed there rather than Route 53. Added a CNAME for voting.flinktrade.com pointing at the ELB, and updated the Ingress with a tls block and the cert-manager cluster-issuer annotation so a Certificate gets requested automatically.
+
+Hit a few real issues along the way. The ClusterIssuer initially failed since the email field was left as an unreplaced placeholder. The DNS-01 challenge then failed with an invalid token error, caused by a trailing newline that got baked into the Cloudflare API token when it was saved through a text file, fixed by stripping it before creating the secret. Once fixed, the certificate issued successfully.
+
+With HTTPS working, voting through the new domain surfaced one more bug: the result page uses Socket.IO for live updates, and its server was hardcoded to expect connections on /result/socket.io, a path that no longer existed once the Ingress rewrite stripped the /result prefix before requests reached the pod. The client needed that prefixed path to route correctly through the Ingress, but the server needed to expect the stripped version. Removing the hardcoded path from the server side, so it just used the default, resolved the mismatch and results now update live over the real domain.
+
+    https://voting.flinktrade.com/vote/
+    https://voting.flinktrade.com/result/
+
+![Voting app live over HTTPS on a real domain, results updating correctly](docs/screenshots/11-https-cert-live.png)
 
 ## Notes
 
