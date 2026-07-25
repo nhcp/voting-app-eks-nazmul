@@ -3,20 +3,27 @@ kind: Ingress
 metadata:
   name: voting-app-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - voting.flinktrade.com
+      secretName: voting-flinktrade-tls
   rules:
-    - http:
+    - host: voting.flinktrade.com
+      http:
         paths:
-          - path: /vote
-            pathType: Prefix
+          - path: /vote(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: vote-service
                 port:
                   number: 80
-          - path: /result
-            pathType: Prefix
+          - path: /result(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: result-service
