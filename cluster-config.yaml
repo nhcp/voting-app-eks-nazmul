@@ -1,0 +1,21 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: voting-app-cluster-nazmul
+  region: us-east-1
+  version: "1.31"
+iam:
+  withOIDC: true
+nodeGroups:
+  - name: ng-voting-app-nazmul
+    instanceType: t3.medium
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 3
+    volumeSize: 20
+    ssh:
+      allow: false
+    labels:
+      role: worker
+    tags:
+      project: voting-app-nazmul
