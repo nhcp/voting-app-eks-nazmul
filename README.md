@@ -54,6 +54,18 @@ Fixed it by creating a StorageClass explicitly using the CSI provisioner and ref
 
 ![Redis and Postgres running](docs/screenshots/04-redis-postgres-running.png)
 
+## Deploying vote, result, and worker
+
+All three services pulled from images I had already built and pushed to Docker Hub during the capstone, so this phase was mostly about connecting them correctly to Redis and Postgres through environment variables. result and worker both needed their database host and credentials overridden to match the actual Postgres service and Secret in this cluster, rather than the generic defaults baked into the Dockerfiles.
+
+vote crash looped on startup with a Python error trying to convert REDIS_PORT into a number. The cause was not the app or the manifest, it was Kubernetes itself. Kubernetes automatically injects an environment variable for every Service in the namespace, named after the service, and since the Redis Service is named redis, it injected its own REDIS_PORT as a full connection URI rather than a plain port number, silently overriding the plain integer the Dockerfile expected. Fixed it by setting REDIS_PORT explicitly in the pod spec, which takes precedence over the auto-injected one.
+
+    kubectl apply -f k8s/vote/
+    kubectl apply -f k8s/result/
+    kubectl apply -f k8s/worker/
+
+![All five pods running](docs/screenshots/05-all-pods-running.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
