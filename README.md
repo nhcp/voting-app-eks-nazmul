@@ -31,6 +31,16 @@ This took about 15 minutes. eksctl built a CloudFormation stack behind the scene
 
 ![EKS cluster created, nodes ready](docs/screenshots/02-cluster-created.png)
 
+## Confirming the cluster is live
+
+Once the cluster finished creating, I wanted proof it actually worked rather than trusting the eksctl output alone. Checking the nodes directly shows both EC2 instances registered with Kubernetes and marked Ready, running the Kubernetes version I asked for.
+
+    kubectl get nodes -o wide
+
+This confirms two things at once: kubectl is correctly pointed at the new cluster, and both nodes joined the cluster successfully and are healthy enough to run workloads. Nothing in Phase 2 can start until this comes back clean.
+
+![Both nodes ready](docs/screenshots/03-nodes-ready.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
