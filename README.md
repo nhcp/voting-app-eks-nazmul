@@ -77,6 +77,28 @@ On AWS, a LoadBalancer type Service is not just an internal thing, EKS automatic
 
 ![Ingress controller live with ELB hostname assigned](docs/screenshots/06-ingress-controller-live.png)
 
+## Routing traffic with the Ingress resource
+
+With the controller running, the last piece was telling it how to route incoming paths to the right service. The Ingress resource maps requests starting with /vote to vote-service and requests starting with /result to result-service, both on port 80. Testing with curl against the load balancer hostname confirmed both routes work end to end, from the public internet through the ELB, into the Ingress controller, and to the correct pod.
+
+I initially used the older kubernetes.io/ingress.class annotation, which worked but is deprecated, and switched to the current spec.ingressClassName field instead, which is why the CLASS column below shows nginx rather than none.
+
+    kubectl apply -f k8s/ingress/
+
+![Ingress routing confirmed working](docs/screenshots/07-ingress-routing-working.png)
+
+## GitHub Actions CI/CD pipeline
+
+The last piece was automating the manual flow, build, push, apply, into a pipeline that runs on every push to main. The workflow logs into Docker Hub, builds and pushes all three images, configures AWS credentials, points kubectl at the EKS cluster the same way eksctl did locally, applies the manifests, then restarts each deployment so it actually pulls the freshly pushed latest image rather than keeping whatever was already running.
+
+First run failed since the source folders for vote, result, and worker had never actually been pushed to the repo, only their Docker images were, from manual builds earlier. Second failure was a Docker Hub access token with the wrong scope, it could log in but not push. Regenerating the token with read, write, and delete access fixed it.
+
+![CI/CD pipeline running green](docs/screenshots/08-cicd-pipeline-success.png)
+
+Checking pod ages afterward confirmed the whole pipeline reached the cluster, not just Docker Hub, since a fresh rollout restart recreates every pod with a brand new age.
+
+![Pods recreated by the pipeline](docs/screenshots/09-pipeline-verified-in-cluster.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
