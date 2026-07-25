@@ -2,6 +2,13 @@
 
 This is my Project 2 for the Ironhack DevOps bootcamp. In the capstone, I deployed this same polyglot voting app, Python vote UI, Node.js result UI, .NET worker, Redis, and Postgres, across a three-tier EC2 architecture using Terraform for provisioning and Ansible for configuration. This project takes the same app and moves it onto a managed Kubernetes cluster on EKS instead, with GitHub Actions handling the build and deploy pipeline automatically.
 
+## Live demo
+
+    Vote: http://afce8ba2cb6874b21baaff9bde6cfa27-1117667419.us-east-1.elb.amazonaws.com/vote/
+    Result: http://afce8ba2cb6874b21baaff9bde6cfa27-1117667419.us-east-1.elb.amazonaws.com/result/
+
+This points at a live EKS cluster, so it only works while the cluster is running. If the links are down, it likely means the cluster was torn down after grading or demo to avoid ongoing AWS costs.
+
 ## Why EKS
 
 We'd already run Kubernetes locally on Minikube earlier in the bootcamp, but Minikube is a single node on your own laptop. EKS gave me a chance to work with an actual multi-node cluster, IAM permissions, and a managed control plane, closer to what this would look like in a real job.
