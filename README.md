@@ -129,6 +129,26 @@ With HTTPS working, voting through the new domain surfaced one more bug: the res
 
 ![Voting app live over HTTPS on a real domain, results updating correctly](docs/screenshots/11-https-cert-live.png)
 
-## Notes
+## Summary
 
-I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
+This project took the polyglot voting app from the capstone and moved it from a three-tier EC2 setup onto Amazon EKS, with a full GitHub Actions pipeline handling build and deploy on every push. Beyond the core assignment, it also includes two optional addons: Kubernetes Secrets for database credentials, and HTTPS through cert-manager and Cloudflare, serving the app on a real domain with a trusted Let's Encrypt certificate rather than a bare load balancer hostname.
+
+If I were doing this again, I would write the vote and result apps to be path-agnostic from the start, using relative paths and a configurable base path rather than assuming they would always be served from the root. Almost every routing bug in this project traced back to that one assumption.
+
+## Problems faced and how they were fixed
+
+Several real issues came up during this build, each one taught something about how EKS actually behaves versus how it looks on paper.
+
+The Postgres PersistentVolumeClaim stayed stuck in Pending because the EBS CSI driver was not installed by default when the cluster was created, and the one StorageClass that did exist used an older provisioner. Installed the CSI driver as an addon and created a StorageClass explicitly pointing at it.
+
+The vote app crash looped on startup because Kubernetes automatically injects a REDIS_PORT environment variable for any Service named redis, and that auto-injected value collided with the plain port number the app expected. Fixed by setting REDIS_PORT explicitly in the pod spec, which takes precedence.
+
+Once the Ingress was routing by path prefix, the vote page lost its styling and its vote button stopped working. The app's HTML used a base tag and absolute paths that always resolved to the domain root, and Flask had no route for the trailing-slash version of /vote, nor a way to serve static files under that sub-path. Fixed all three: removed the base tag, added a trailing-slash route, and added an explicit static file route under /vote/static/.
+
+The GitHub Actions pipeline failed twice on its first real runs. Once because the vote, result, and worker source folders had only ever been built and pushed manually, never actually committed to the repo. Once because the Docker Hub access token was scoped without push permission. Fixed by committing the missing folders and regenerating the token with the correct scope.
+
+Setting up HTTPS surfaced a few more issues. The ClusterIssuer failed to register with Let's Encrypt because the contact email was left as an unreplaced placeholder. The DNS-01 challenge then failed because the Cloudflare API token had a trailing newline baked in from being saved through a text file, which Cloudflare's API rejected outright. Fixed by stripping the newline before creating the secret.
+
+With HTTPS working, the result page stopped showing live updates. Its Socket.IO client was correctly told to connect on /result/socket.io so the Ingress would route it, but the server was hardcoded to expect that same literal path, which no longer existed once the Ingress rewrite stripped the /result prefix before the request reached the pod. Fixed by removing the hardcoded path from the server side so it used the default, matching what actually arrives after the rewrite.
+
+Last one: after voting, the confirmation checkmark stopped appearing. The page's jQuery script tag was loaded over plain http, and browsers silently block that kind of mixed content on an https page, so the script never ran. Fixed by switching it to https.
