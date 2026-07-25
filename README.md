@@ -66,6 +66,17 @@ vote crash looped on startup with a Python error trying to convert REDIS_PORT in
 
 ![All five pods running](docs/screenshots/05-all-pods-running.png)
 
+## Installing the NGINX Ingress Controller
+
+Every service so far only exists inside the cluster, nothing outside AWS could reach vote or result yet. The Ingress Controller is what exposes them to the internet and routes different URL paths to the right backend service. I used Helm to install it rather than writing the underlying resources by hand, since it is a fairly large bundle, RBAC rules, a controller Deployment, and a LoadBalancer Service.
+
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+
+On AWS, a LoadBalancer type Service is not just an internal thing, EKS automatically provisions a real Elastic Load Balancer for it. Once the controller pod was running, kubectl get svc showed the ELB's external hostname, which is the actual public entry point into the cluster.
+
+![Ingress controller live with ELB hostname assigned](docs/screenshots/06-ingress-controller-live.png)
+
 ## Notes
 
 I'll keep adding to this as I go, mostly documenting decisions and any issues I hit along the way, since that's usually more useful than a step that just worked first try.
